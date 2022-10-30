@@ -1,0 +1,333 @@
+﻿@using PagedList.Mvc;
+@using PagedList;
+@model IPagedList<Homework6.Models.product>
+@using Homework6.Models
+@{
+    ViewBag.Title = "Index";
+}
+
+@*<h2>Index</h2>
+
+    <p>
+        @Html.ActionLink("Create New", "Create")
+    </p>*@
+
+
+<h2>Products</h2>
+
+<!-- Modal -->
+<div class="modal fade modal-dialog-centered" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="partialView">
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="Update()">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade modal-dialog-centered" id="exampleModal2" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="partialView2">
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="AddToDatabase()">Confirm Creation</button>
+            </div>
+        </div>
+    </div>
+</div>
+@using (Html.BeginForm("Search", "products", FormMethod.Post, new { style = "width:100%" }))
+{
+    <table class="table">
+        <tr>
+            <th style="width:20%"><input type="text" style="max-width:none; display:flex" name="searchText" class="form-control" placeholder="Search" /></th>
+            <th style="width:1%"><button type="submit" class="btn btn-success">Search</button></th>
+            <th style="width:100%"><button type="button" class="btn btn-info" onclick="Create()">Create</button></th>
+        </tr>
+    </table>
+}
+<table class="table">
+    <tr>
+        <th>
+            Name
+        </th>
+        <th>
+            Year
+        </th>
+        <th>
+            Price
+        </th>
+        <th>
+            Brand
+        </th>
+        <th>
+            Category
+        </th>
+        <th></th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.product_name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.model_year)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.list_price)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.brand.brand_name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.category.category_name)
+            </td>
+            <td>
+                <button type="button" class="btn btn-primary btn-update" onclick="edit(@item.product_id)" data-id="@item.product_id">Edit</button>
+                |
+                <button type="button" class="btn btn-info btn-update" onclick="DetailsInfo(@item.product_id)" data-id="@item.product_id">Details</button> |
+                <button type="button" class="btn btn-danger btn-update" onclick="Delete(@item.product_id)" data-id="@item.product_id">Delete</button>
+            </td>
+        </tr>
+    }
+
+</table>
+@Html.PagedListPager(Model, i => Url.Action("Index", "products", new { i, search = Request.QueryString["search"] }))
+
+<script>
+    function edit(myid) {
+        
+            $('#exampleModal').modal('toggle');
+            $('#partialView').load('/products/EditView');
+            var Id = parseInt(myid)
+        
+             $.get({
+                    url: "@Url.Action("EditProd", "products")",
+                    data: {
+                        id: myid,
+                    },
+                 success: (data, status) => {
+                     console.log("Success!!");
+                     let productsData = JSON.parse(data);
+                     $('#id').val(productsData.id)
+                     console.log("Test Val: " + $('#id').val())
+                     $('#name').val(productsData.name);
+                     $("#catergorySelect").empty();
+                     $("#catergorySelect").append(`<option value="${productsData.id}">${productsData.catergory}</option>`);
+                     FillCatergorySelect();
+                     $('#price').val(productsData.price);
+                     
+                     $("#brand-select").empty();
+                     $("#brand-select").append(`<option value="${productsData.id}">${productsData.brand}</option>`);
+                     $('#model').val(productsData.model);
+                     GetBrandData()
+                    }
+             });
+
+
+    }
+    function DetailsInfo(myid) {
+            $('#exampleModal').modal('toggle');
+        $('#partialView').load('/products/Details');
+
+             $.get({
+                    url: "@Url.Action("ProductDetails", "products")",
+                    data: {
+                        id: myid,
+
+                    },
+                 success: (data) => {
+
+                     let product = JSON.parse(data);
+
+                     $('#name').html(product.productname);
+                     $('#year').html(product.year);
+                     $('#price').html(product.price);
+                     $('#catergory').html(product.catergory);
+                     $('#brand').html(product.brand);
+
+                     $(product.stores).each((i, e) => {
+                         if (e.quantity == 0) {
+                             $('#stores').append(`<tr><td>${e.storename}</td><td><p style="color:red">Out of stock</p></td></tr>`)
+                         }
+                         else {
+                             $('#stores').append(`<tr><td>${e.storename}</td><td>${e.quantity}</td></tr>`)
+                         }
+                         
+                     })
+
+                    }
+             });
+    }
+    function Delete(myid) {
+
+             $.get({
+                    url: "@Url.Action("DeleteConfirmed", "products")",
+                    data: {
+                        id: myid,
+
+                    },
+                 success: (data, status) => {
+                    $('#exampleModal').modal('hide')
+                    GetProducts();
+
+                }
+             });
+    }
+
+    function Update() {
+        console.log("The ID is: " + parseInt($('#id').val()));
+            $.get({
+                url: "@Url.Action("Verify", "products")",
+               
+                data: {
+
+                    product_id: parseInt($('#id').val()),
+                    product_name: $('#name').val(),
+                    category_id: parseInt($('#catergorySelect').val()),
+                    list_price: parseFloat($('#price').val()),
+                    brand_id: parseInt($('#brand-select').val()),
+                    model_year: parseInt($('#model').val())
+                    
+                   
+                },
+                success: (data, status) => {
+                    $('#exampleModal').modal('hide')
+                    GetProducts();
+
+                }
+            })
+    }
+    function AddToDatabase() {
+       
+            $.get({
+                url: "@Url.Action("AddFinal", "products")",
+               
+                data: {
+
+                    product_id: parseInt($('#id').val()),
+                    product_name: $('#name').val(),
+                    category_id: parseInt($('#catergorySelect').val()),
+                    list_price: parseFloat($('#price').val()),
+                    brand_id: parseInt($('#brand-select').val()),
+                    model_year: parseInt($('#model').val())
+                    
+                   
+                },
+                success: (data, status) => {
+                    $('#exampleModal').modal('hide')
+                    GetProducts();
+
+                }
+            })
+    }
+    function Create() {
+        
+        $('#exampleModal2').modal('toggle');
+            $('#partialView2').load('/products/EditView');
+            
+        console.log("Create the called");
+             $.get({
+                    url: "@Url.Action("CreateProd", "products")",
+                    data: {
+                        id: 1,
+                    },
+                 success: (data, status) => {
+                     console.log("Success!!");
+                     let productsData = JSON.parse(data);
+                     $('#id').val("")
+                     
+                     $('#name').val();
+                     $("#catergorySelect").empty();
+                     $("#catergorySelect").append(`<option value="${productsData.id}">${productsData.catergory}</option>`);
+                     FillCatergorySelect();
+                     $('#price').val();
+                     
+                     $("#brand-select").empty();
+                     $("#brand-select").append(`<option value="${productsData.id}">${productsData.brand}</option>`);
+                     $('#model').val();
+                     GetBrandData()
+                    }
+             });
+
+
+    }
+
+    function GetProducts() {
+                $.get({
+                    url: "@Url.Action("GetProducts", "products")",
+                    success: (data) => {
+                        let productsData = JSON.parse(data);
+                        $("#tableBody").empty();
+                        $(productsData).each((i, element) => {
+                            $("#tableBody").append(`<tr data-id="${element.id}">
+                             <td>${element.name}</td>
+                             <td>${element.model}</td>
+                             <td>${element.price}</td>
+                             <td>${element.brand}</td>
+                             <td>${element.catergory}</td>
+                             <td><button type="button" class="btn btn-primary btn-update" onclick="edit(${element.id})" data-id="${element.id}" >Edit</button></td>
+                             <td><button class="btn btn-primary" id="btn-details"  onclick="ProductInfo(${element.id})">Details</button></td>"
+                             <td><button class="btn btn-danger" id="btn-delete"  onclick="Delete(${element.id})">Delete</button></td>
+                             </tr>`)
+                        });
+                    }
+                });
+    }
+
+
+    function FillCatergorySelect() {
+
+                 $.get({
+                    url: "@Url.Action("GetCatergoryNames", "products")",
+                    success: (data) => {
+                        let productData = JSON.parse(data);
+                        $(productData).each((i, e) => {
+                            $("#catergorySelect").append(`<option value="${e.id}">${e.name}</option>`);
+                        });
+                    }
+                });
+
+    }
+
+    function GetBrandData() {
+                $.get({
+                    url: "@Url.Action("GetBrandData", "products")",
+                    method: "GET",
+                    success: (data, status) => {
+                        let inData = JSON.parse(data);
+                        let select = $("#brand-select");
+
+                        $(inData).each((i, v) => {
+                            select.append(`<option value="${v.brand_id}">${v.brand_name}</option>`);
+                        });
+                    }
+                });
+    }
+
+</script>

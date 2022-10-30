@@ -1,0 +1,85 @@
+﻿@using PagedList.Mvc;
+@using PagedList;
+@model IPagedList<Homework6.Models.order>
+@using Homework6.Models
+
+<h1>Orders</h1>
+@using (Html.BeginForm("Search", "Orders", FormMethod.Post, new { style = "width:100%" }))
+{
+    <table class="table">
+        <tr>
+            <th style="width:1%"><input type="datetime-local" id="test_Datetime" value="2000-01-01 00:00" autocomplete="on" name="searchText"></th>
+            <th style="width:1%"><button type="submit" class="btn btn-success">Search</button></th>
+            <th style="width:100%"><button type="button" onclick="location.href='@Url.Action("Index", "Orders") '" class="btn btn-info">Clear</button></th>
+        </tr>
+    </table>
+}
+
+@foreach (var item in Model)
+{
+
+    decimal grand = 0;
+
+    <h2>Order @item.order_id - @item.order_date.ToShortDateString()</h2>
+    <table class="table">
+        <tr>
+            <th>
+                Product Name
+            </th>
+            <th>
+                List Price
+            </th>
+            <th>
+                Quantity
+            </th>
+            <th>
+                Total
+            </th>
+
+        </tr>
+
+        @foreach (var rowItem in item.order_items)
+        {
+
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => rowItem.product.product_name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => rowItem.product.list_price)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => rowItem.quantity)
+                </td>
+                <td>
+                    @{
+                        var total = rowItem.product.list_price * rowItem.quantity;
+                        grand += total;
+
+                    }
+                    @Html.DisplayFor(modelItem => total)
+                </td>
+
+
+            </tr>
+        }
+        <tr>
+            <td></td>
+            <td></td>
+            <td>
+                <b> Grand Total: </b>
+            </td>
+            <td>
+               
+                @Html.DisplayFor(modelItem => grand)
+            </td>
+
+
+        </tr>
+
+
+
+    </table>
+}
+
+@Html.PagedListPager(Model, i => Url.Action("Index", "Orders", new { i, search = Request.QueryString["search"] }))
